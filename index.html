@@ -90,6 +90,10 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
  margin-top:8px;padding-top:6px;border-top:1px solid rgba(255,255,255,.14)}
 .sum .rows li.hd:first-child{margin-top:0;padding-top:0;border-top:0}
 .sum .rows li.hd em{font-style:normal;font-weight:600;font-size:10.5px;opacity:.7;color:#fff}
+.prewarn{background:rgba(224,49,49,.45);border:1px solid rgba(255,255,255,.35);border-radius:9px;
+ padding:9px 11px;margin-top:10px;font-size:12.5px;line-height:1.7}
+.prewarn b{font-size:13px}
+.prewarn span{opacity:.85;font-size:11.5px}
 .sum .rows li.nxt.hide{display:none}
 .sum .rows li.nexthd{cursor:pointer}
 .sum .rows li.nexthd .ic{display:inline-block;width:16px;font-size:10px;opacity:.9}
@@ -604,10 +608,28 @@ function renderSums(){
     const head = '<div class="nm"><span class="dot" style="background:'+empColor(e.id)+'"></span>'
       + '<span class="code">'+esc(e.code||'')+'</span>'+esc(e.name)+'</div>';
     if(!c.started){
+      // 付与前／退職後：有給の記録があれば警告する（付与されていない日数は使えないため）
+      const mine = S.leaves.filter(function(l){ return l.empId === e.id && l.kind !== 'furikae'; });
+      const tk = round1(mine.filter(function(l){ return l.taken; })
+                    .reduce(function(a,l){ return a+Number(l.amount); }, 0));
+      const pl = round1(mine.filter(function(l){ return !l.taken; })
+                    .reduce(function(a,l){ return a+Number(l.amount); }, 0));
+      const fp = round1(S.leaves.filter(function(l){ return l.empId === e.id && l.kind === 'furikae' && !l.taken; })
+                    .reduce(function(a,l){ return a+Number(l.amount); }, 0));
+      let ex = '';
+      if(tk + pl > 0){
+        ex = '<div class="prewarn">'
+           + '<b>付与前の有給が登録されています</b><br>'
+           + (tk > 0 ? '取得済 '+tk+'日' : '')
+           + (tk > 0 && pl > 0 ? '　／　' : '')
+           + (pl > 0 ? '取得予定 '+pl+'日' : '')
+           + '<br><span>初回付与日より前は有給を取得できません。日付の確認をお願いします。</span></div>';
+      }
+      if(fp > 0) ex += '<div style="font-size:12.5px;margin-top:8px;opacity:.9">振替休日（未取得）：'+fp+' 日</div>';
       return '<div class="sum" style="background:#495057">'+head
         + '<div style="font-size:13px;opacity:.85;margin-top:6px">'
         + (c.next ? '付与前（初回付与日：'+ymd(c.next.date)+' ／ '+c.next.days+'日）' : '退職')
-        + '</div></div>';
+        + '</div>' + ex + '</div>';
     }
     const li = function(k,v){ return '<li><span>'+k+'</span><b>'+v+'</b></li>'; };
     const hd = function(t,s){ return '<li class="hd">'+t+(s?'<em>'+s+'</em>':'')+'</li>'; };
