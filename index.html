@@ -237,7 +237,15 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
 <!-- 同じフォルダの共有データ（管理システムの「共有データを保存」で作成）。無ければ無視されます -->
 <script src="yukyu-secure.js" onerror="window.__noSecure=true"></script>
 <script src="yukyu-data.js" onerror="window.__noShareA=true"></script>
+<script>window.__D1 = window.YUKYU_DATA;</script>
 <script src="有給データ.js" onerror="window.__noShareB=true"></script>
+<script>
+/* 2つの共有データがある場合は、保存日時が新しいほうを使う（古いファイルに上書きされないように） */
+if(window.__D1){
+  const a = window.__D1, b = window.YUKYU_DATA;
+  if(!b || b === a || (a.savedAt || '') >= (b.savedAt || '')) window.YUKYU_DATA = a;
+}
+</script>
 
 <header><div class="wrap">
   <h1>有給休暇 取得状況ビューア</h1><span class="ro">閲覧専用</span>
@@ -280,7 +288,6 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
       <span id="whoBar" class="hide">表示中：<b id="whoName"></b>
         <button type="button" class="btn sm ghost" id="whoChange">変更</button></span>
       <button class="btn sm ghost" id="reload" title="共有データを読み直します">最新に更新</button>
-      <button class="btn sm ghost" id="saveOne" title="今のデータを埋め込んだ1ファイルを保存します（スマホへ送る用）">スマホ用に保存</button>
       <button class="btn sm" id="pdfOut" style="margin-left:auto">PDF出力（印刷）</button>
     </div>
     <div id="dataInfo" class="no-print" style="font-size:11.5px;color:var(--sub);margin-bottom:8px"></div>
@@ -863,24 +870,6 @@ window.addEventListener('resize', function(){
   }, 200);
 });
 
-/* ==== スマホ用の1ファイル書き出し（データを埋め込んだHTML） ==== */
-$('saveOne').onclick = function(){
-  if(!S.emps.length){ alert('先にデータを読み込んでください'); return; }
-  const payload = JSON.stringify({savedAt: savedAt || new Date().toISOString(), data:S});
-  const doc = document.documentElement.cloneNode(true);
-  // 埋め込み済みデータを先頭に差し込む（同フォルダの共有データより優先されます）
-  doc.querySelectorAll('script[src]').forEach(function(s){ s.remove(); });
-  const inj = document.createElement('script');
-  inj.textContent = 'window.YUKYU_DATA = ' + payload + ';';
-  doc.querySelector('body').insertBefore(inj, doc.querySelector('body').firstChild);
-  // 保存ボタン自体は配布ファイルでは不要
-  const b = doc.querySelector('#saveOne'); if(b) b.remove();
-  const html = '<!DOCTYPE html>\n' + doc.outerHTML;
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([html], {type:'text/html'}));
-  a.download = '有給休暇_スマホ用_' + iso(new Date()) + '.html';
-  a.click(); URL.revokeObjectURL(a.href);
-};
 
 /* ==== 社員用モード（暗号化データを合言葉で開く） ==== */
 const PASS_KEY = 'yukyu-pass-v1', ME_KEY = 'yukyu-me-v1';
@@ -950,7 +939,6 @@ async function unlock(pass, remember){
     // 社員用モードでは自分の分だけ表示（データ読込・書き出しは隠す）
     secureMode = true;
     $('loadDock').classList.add('hide');
-    $('saveOne').classList.add('hide');
     let me = null;
     try{ me = localStorage.getItem(ME_KEY); }catch(e){}
     if(me && S.emps.some(function(e){ return e.id === me; })) setMe(me);
@@ -978,7 +966,6 @@ try{ const sm = localStorage.getItem(VSORT); if(sm) $('sortMode').value = sm; }c
 if(window.YUKYU_ENC){
   /* 社員用（暗号化データ配信）モード */
   $('loadDock').classList.add('hide');
-  $('saveOne').classList.add('hide');
   $('lock').classList.remove('hide');
   let saved = null;
   try{ saved = localStorage.getItem(PASS_KEY); }catch(e){}
