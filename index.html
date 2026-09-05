@@ -140,7 +140,7 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
 .empty{font-size:13px;color:var(--sub);padding:20px 0;text-align:center}
 .note{font-size:11px;color:var(--sub);margin-top:10px;line-height:1.6}
 #printHead{display:none}
-.hide{display:none}
+.hide{display:none!important}   /* id指定の display より優先させる */
 /* 合言葉／氏名選択の画面 */
 #lock,#pick{position:fixed;inset:0;z-index:300;background:linear-gradient(150deg,#111a2e,#1c2b52);
  display:flex;align-items:center;justify-content:center;padding:20px}
