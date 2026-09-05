@@ -901,13 +901,29 @@ async function decryptShared(pass){
 
 // 自分の氏名を選ぶ
 function showPick(){
-  const list = $('pickList');
-  list.innerHTML = activeEmps().map(function(e){
-    return '<button type="button" data-emp="'+e.id+'"><span class="c">'+esc(e.code||'')+'</span>'+esc(e.name)+'</button>';
-  }).join('');
+  const box = $('pickList'), list = activeEmps();
+  if(!list.length){
+    box.innerHTML = '<p class="lmsg" style="margin:0 0 12px">'
+      + '<b>社員データが入っていません。</b><br>'
+      + '管理者に「社員配信用（暗号化）データの書き出し」をやり直して、<br>'
+      + 'yukyu-secure.js を差し替えてもらってください。'
+      + (S.emps.length ? '<br>（在職中の社員が0名です）' : '')
+      + '</p>';
+  } else {
+    box.innerHTML = list.map(function(e){
+      return '<button type="button" data-emp="'+e.id+'"><span class="c">'+esc(e.code||'')+'</span>'+esc(e.name)+'</button>';
+    }).join('');
+  }
+  box.innerHTML += '<button type="button" id="relock" style="border-style:dashed;font-weight:400;'
+                 + 'color:#6b7688;margin-top:6px">合言葉を入れ直す</button>';
   $('pick').classList.remove('hide');
 }
 $('pickList').onclick = function(ev){
+  if(ev.target.closest('#relock')){        // 合言葉から入り直す
+    try{ localStorage.removeItem(PASS_KEY); localStorage.removeItem(ME_KEY); }catch(e){}
+    location.reload();
+    return;
+  }
   const b = ev.target.closest('[data-emp]'); if(!b) return;
   setMe(b.dataset.emp);
   $('pick').classList.add('hide');
