@@ -142,7 +142,7 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
 #printHead{display:none}
 .hide{display:none!important}   /* id指定の display より優先させる */
 /* 合言葉／氏名選択の画面 */
-#lock,#pick{position:fixed;inset:0;z-index:300;background:linear-gradient(150deg,#111a2e,#1c2b52);
+#lock,#whoPick{position:fixed;inset:0;z-index:300;background:linear-gradient(150deg,#111a2e,#1c2b52);
  display:flex;align-items:center;justify-content:center;padding:20px}
 .lockbox{background:#fff;border-radius:16px;padding:22px 22px 20px;width:min(92vw,380px);
  box-shadow:0 20px 50px rgba(0,0,0,.35)}
@@ -154,11 +154,11 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
 .lockbox .lchk input{width:17px;height:17px;accent-color:var(--accent)}
 .lockbox .btn{width:100%;padding:12px;font-size:15px}
 .lockbox .lerr{color:var(--ng);font-size:12.5px;margin:10px 0 0}
-#pickList{display:grid;gap:8px;max-height:60vh;overflow:auto}
-#pickList button{text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
+#whoList{display:grid;gap:8px;max-height:60vh;overflow:auto}
+#whoList button{text-align:left;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;
  background:#fff;font-size:15px;font-family:inherit;cursor:pointer;font-weight:700}
-#pickList button:hover{border-color:var(--accent);background:var(--accent-soft)}
-#pickList button .c{color:var(--sub);font-size:12px;font-weight:700;margin-right:8px}
+#whoList button:hover{border-color:var(--accent);background:var(--accent-soft)}
+#whoList button .c{color:var(--sub);font-size:12px;font-weight:700;margin-right:8px}
 #whoBar{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--sub)}
 #whoBar b{color:var(--ink);font-size:13.5px}
 
@@ -257,11 +257,11 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
 </div>
 
 <!-- 自分の氏名を選ぶ画面 -->
-<div id="pick" class="hide">
+<div id="whoPick" class="hide">
   <div class="lockbox">
     <h2>あなたの氏名を選んでください</h2>
     <p class="lmsg">次回からはこの画面は出ません（あとから変更できます）。</p>
-    <div id="pickList"></div>
+    <div id="whoList"></div>
   </div>
 </div>
 
@@ -901,7 +901,7 @@ async function decryptShared(pass){
 
 // 自分の氏名を選ぶ
 function showPick(){
-  const box = $('pickList'), list = activeEmps();
+  const box = $("whoList"), list = activeEmps();
   if(!list.length){
     box.innerHTML = '<p class="lmsg" style="margin:0 0 12px">'
       + '<b>社員データが入っていません。</b><br>'
@@ -916,9 +916,9 @@ function showPick(){
   }
   box.innerHTML += '<button type="button" id="relock" style="border-style:dashed;font-weight:400;'
                  + 'color:#6b7688;margin-top:6px">合言葉を入れ直す</button>';
-  $('pick').classList.remove('hide');
+  $("whoPick").classList.remove("hide");
 }
-$('pickList').onclick = function(ev){
+$("whoList").onclick = function(ev){
   if(ev.target.closest('#relock')){        // 合言葉から入り直す
     try{ localStorage.removeItem(PASS_KEY); localStorage.removeItem(ME_KEY); }catch(e){}
     location.reload();
@@ -926,7 +926,7 @@ $('pickList').onclick = function(ev){
   }
   const b = ev.target.closest('[data-emp]'); if(!b) return;
   setMe(b.dataset.emp);
-  $('pick').classList.add('hide');
+  $("whoPick").classList.add("hide");
 };
 function setMe(id){
   try{ localStorage.setItem(ME_KEY, id); }catch(e){}
