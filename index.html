@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow,noarchive">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b5bdb">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="有給">
 <title>有給休暇 取得状況ビューア（閲覧専用）</title>
 <style>
 :root{
@@ -992,6 +998,12 @@ if(window.YUKYU_ENC){
   if(location.protocol === 'http:' || location.protocol === 'https:'){
     setInterval(refreshShared, 5*60*1000);
   }
+}
+</script>
+<script>
+/* ホーム画面からアプリとして起動するための登録 */
+if("serviceWorker" in navigator && location.protocol.indexOf("http") === 0){
+  window.addEventListener("load", function(){ navigator.serviceWorker.register("sw.js").catch(function(){}); });
 }
 </script>
 </body>
