@@ -1,5 +1,5 @@
 /* 有給休暇 確認アプリ － オフライン用（ホーム画面からアプリとして起動するため） */
-const CACHE = 'yukyu-v3';   /* index.html を更新したら数字を上げる */
+const CACHE = 'yukyu-v4';   /* index.html を更新したら数字を上げる */
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon.svg'];
 
 self.addEventListener('install', function(ev){
