@@ -94,6 +94,15 @@ input:focus,select:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3
  padding:9px 11px;margin-top:10px;font-size:12.5px;line-height:1.7}
 .prewarn b{font-size:13px}
 .prewarn span{opacity:.85;font-size:11.5px}
+.sum .rows li.clk{cursor:pointer}
+.sum .rows li.clk .ic{display:inline-block;width:14px;font-size:9px;opacity:.8}
+.sum .rows li.clk:hover{background:rgba(255,255,255,.12)}
+.sum .rows li.dlist{display:grid;grid-template-columns:auto auto 1fr;gap:2px 10px;
+ background:rgba(255,255,255,.11);font-size:11.5px;padding:8px 10px;margin:-1px 0 4px;
+ border-radius:0 0 6px 6px;line-height:1.7}
+.sum .rows li.dlist .d{font-variant-numeric:tabular-nums;white-space:nowrap}
+.sum .rows li.dlist .a{font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85;text-align:right}
+.sum .rows li.dlist .m{opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sum .rows li.nxt.hide{display:none}
 .sum .rows li.nexthd{cursor:pointer}
 .sum .rows li.nexthd .ic{display:inline-block;width:16px;font-size:10px;opacity:.9}
@@ -638,18 +647,23 @@ function renderSums(){
     const hd = function(t,s){ return '<li class="hd">'+t+(s?'<em>'+s+'</em>':'')+'</li>'; };
     // 翌年分は既定で非表示（見出しをタップで開閉）
     const n  = function(k,v){ return '<li class="nxt hide"><span>'+k+'</span><b>'+v+'</b></li>'; };
+    // クリックすると日付の一覧が開く行
+    const liC = function(k,v,key,cls){
+      return '<li class="'+(cls||'')+' clk" data-list="'+key+'" data-emp="'+e.id+'">'
+           + '<span><b class="ic">▸</b>'+k+'</span><b>'+v+'</b></li>';
+    };
     const hdNext = function(s){
       return '<li class="hd nexthd"><span><b class="ic">▶</b> 翌年分</span>'+(s?'<em>'+s+'</em>':'')+'</li>';
     };
     let rows = hd('当年分', ymd(c.curStart)+' ～ '+ymd(new Date(c.curEnd.getFullYear(), c.curEnd.getMonth(), c.curEnd.getDate()-1)))
       + li('繰越日数', c.carry+' 日')
       + li(c.curIsInit ? '初期設定の残日数' : '付与日数', c.curDays+' 日')
-      + li('取得済み', c.curUsed+' 日');
+      + liC('取得済み', c.curUsed+' 日', 'curUsed');
     if(c.curPlanned > 0){
       // 当年分で使える日数（繰越＋付与）を超えていないか
       const cap = round1(c.carry + c.curDays);
       const over = round1(c.curTotal - cap);
-      rows += li('取得予定（未消化）', c.curPlanned+' 日')
+      rows += liC('取得予定（未消化）', c.curPlanned+' 日', 'curPlanned')
             + '<li'+(over > 0 ? ' class="over"' : '')+'><span>取得合計日数</span><b>'+c.curTotal+' 日</b></li>';
       if(over > 0)
         rows += '<li class="over note"><span>使える日数（繰越＋付与 '+cap+'日）を超過</span><b>+'+over+' 日</b></li>';
@@ -658,7 +672,7 @@ function renderSums(){
       rows += hdNext(ymd(c.next.date)+' 付与')
             + n('繰越予定日数', c.nextCarry+' 日')
             + n('付与日数', c.next.days+' 日');
-      if(c.nextPlanned > 0) rows += n('取得予定', c.nextPlanned+' 日');
+      if(c.nextPlanned > 0) rows += liC('取得予定', c.nextPlanned+' 日', 'nextPlanned', 'nxt hide');
     } else {
       rows += hdNext('') + n('次回付与', '—');
     }
@@ -667,7 +681,7 @@ function renderSums(){
     }).reduce(function(a,l){ return a+Number(l.amount); }, 0));
     if(c.initG) rows += n('初期設定', ymd(c.initG.date)+' に '+c.initG.days+'日');
     if(c.soon) rows += n('次の時効消滅', ymd(c.soon.on)+' に '+c.soon.days+'日');
-    if(furiPend > 0) rows += n('振替休日（未取得）', furiPend+' 日');
+    if(furiPend > 0) rows += liC('振替休日（未取得）', furiPend+' 日', 'furi', 'nxt hide');
     if(c.over.length) rows += '<li style="color:#ffc9c9"><span>残高超過の取得</span><b>'
       + round1(c.over.reduce(function(a,o){ return a+o.amount; },0))+' 日</b></li>';
     let duty = '';
@@ -871,6 +885,50 @@ $('sortMode').onchange = function(){
 };
 
 $('reload').onclick = refreshShared;
+
+/* 残日数サマリ：日数をクリックすると、その内訳（日付の一覧）を開く */
+function detailLeaves(empId, which){
+  const e = emp(empId); if(!e) return [];
+  const c = calc(e, $('asOf').value);
+  const mine = S.leaves.filter(function(l){ return l.empId === empId; });
+  const inCur = function(l){ const d = pd(l.date); return d >= c.curStart && d < c.curEnd; };
+  if(which === 'curUsed')     return mine.filter(function(l){ return l.kind !== 'furikae' && l.taken && inCur(l); });
+  if(which === 'curPlanned')  return mine.filter(function(l){ return l.kind !== 'furikae' && !l.taken && inCur(l); });
+  if(which === 'nextPlanned'){
+    const nEnd = addMonths(c.curEnd, 12);
+    return mine.filter(function(l){
+      const d = pd(l.date);
+      return l.kind !== 'furikae' && !l.taken && d >= c.curEnd && d < nEnd; });
+  }
+  if(which === 'furi')        return mine.filter(function(l){ return l.kind === 'furikae' && !l.taken; });
+  return [];
+}
+$('sums').addEventListener('click', function(ev){
+  const row = ev.target.closest ? ev.target.closest('li.clk') : null;
+  if(!row) return;
+  const next = row.nextElementSibling;
+  if(next && next.classList.contains('dlist')){        // 開いていたら閉じる
+    next.remove();
+    const ic = row.querySelector('.ic'); if(ic) ic.textContent = '▸';
+    return;
+  }
+  const list = detailLeaves(row.dataset.emp, row.dataset.list)
+    .sort(function(a,b){ return a.date < b.date ? -1 : 1; });
+  const li = document.createElement('li');
+  li.className = 'dlist' + (row.classList.contains('nxt') ? ' nxt' : '');
+  li.innerHTML = list.length
+    ? list.map(function(l){
+        const half = Number(l.amount) === 0.5 ? '（半休）' : '';
+        return '<span class="d">' + fmt(l.date) + '</span>'
+             + '<span class="a">' + Number(l.amount) + '日' + half + '</span>'
+             + (l.kind === 'furikae'
+                 ? '<span class="m">振替元：' + fmt(l.srcDate || '') + '</span>'
+                 : (l.note ? '<span class="m">' + esc(l.note) + '</span>' : '<span class="m"></span>'));
+      }).join('')
+    : '<span class="d">対象の記録はありません</span>';
+  row.parentNode.insertBefore(li, row.nextSibling);
+  const ic = row.querySelector('.ic'); if(ic) ic.textContent = '▾';
+});
 
 // 残日数サマリ：「翌年分」の開閉（既定は非表示）
 $('sums').addEventListener('click', function(ev){
