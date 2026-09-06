@@ -271,7 +271,9 @@ if(window.__D1){
     <input type="password" id="passIn" placeholder="合言葉" autocomplete="current-password">
     <label class="lchk"><input type="checkbox" id="passSave" checked> この端末に記憶する</label>
     <button class="btn" id="passGo">開く</button>
-    <p class="lerr hide" id="passErr">合言葉が違うようです。もう一度お試しください。</p>
+    <p class="lerr hide" id="passErr">合言葉が違うようです。<br>
+      大文字・小文字、記号（ハイフンなど）が合っているかご確認ください。<br>
+      それでも開けない場合は、管理者に合言葉の再確認をご依頼ください。</p>
   </div>
 </div>
 
@@ -1012,10 +1014,17 @@ function logout(){
   location.reload();
 }
 $('passGo').onclick = async function(){
-  const p = $('passIn').value;
+  // 前後の空白や全角スペースは取り除く（コピー貼り付けの事故を防ぐ）
+  const p = $('passIn').value.replace(/^[\s　]+|[\s　]+$/g, '');
   if(!p) return;
   $('passGo').disabled = true; $('passGo').textContent = '確認中…';
-  const ok = await unlock(p, $('passSave').checked);
+  let ok = await unlock(p, $('passSave').checked);
+  if(!ok){                       // 全角で入力された英数字・記号を半角に直して再試行
+    const half = p.replace(/[Ａ-Ｚａ-ｚ０-９！-～]/g, function(c){
+      return String.fromCharCode(c.charCodeAt(0) - 0xFEE0);
+    }).replace(/[‐-‒–—―ー]/g, '-');
+    if(half !== p) ok = await unlock(half, $('passSave').checked);
+  }
   $('passGo').disabled = false; $('passGo').textContent = '開く';
   if(!ok){ $('passErr').classList.remove('hide'); $('passIn').value = ''; $('passIn').focus(); }
 };
